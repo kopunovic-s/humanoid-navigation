@@ -1,0 +1,85 @@
+# g1_pickup.yaml  —  HW Final Project
+# =========================================
+# Extends HW3 g1.yaml with pickup-task parameters.
+# All HW3 balance / QP parameters are preserved below.
+
+# ---- Scene & timing ----
+pickup_scene: "{DIR}/resources/g1/scene_pickup.xml"
+xml_path:     "{DIR}/resources/g1/scene_pickup.xml"
+
+simulation_duration: 180     # 3 minutes — enough for 2-item sequence
+simulation_dt:       0.002
+control_decimation:  10
+
+# ---- Standing balance (unchanged from HW3) ----
+stand_CoM: [0, 0, 0.751]
+
+CoM_kps: [1200, 1200, 0]
+CoM_kis: [30, 60, 0]
+CoM_kds: [300, 350, 0]
+CoM_max_force:    500.0
+CoM_max_integral: 0.5
+
+stand_kps_tau: [50, 20, 20, 50, 5, 5,
+                50, 20, 20, 50, 5, 5]
+stand_kds_tau: [15, 10, 10, 15, 5, 5,
+                15, 10, 10, 15, 5, 5]
+
+full_stand_kps_tau: [60, 60, 25, 60, 8, 8,
+                     60, 60, 25, 60, 8, 8]
+full_stand_kds_tau: [15, 15, 10, 15, 6, 6,
+                     15, 15, 10, 15, 6, 6]
+
+hip_roll_scale:   0.5
+hip_pitch_scale:  0.3
+ankle_pitch_scale: 1.0
+ankle_roll_scale:  1.0
+
+standing_angles: [-0.2, 0.0, 0.0, 0.59, -0.34, 0.0,
+                  -0.2, 0.0, 0.0, 0.59, -0.34, 0.0]
+
+dof_pos_lower_limits: [-2.2602, -0.3491, -2.4818, 0.0611, -0.8029, -0.2356,
+                       -2.2602, -2.7926, -2.4818, 0.0611, -0.8029, -0.2356]
+dof_pos_upper_limits: [ 2.6093,  2.7926,  2.4818, 2.7314,  0.4538,  0.2356,
+                        2.6093,  0.3491,  2.4818, 2.7314,  0.4538,  0.2356]
+
+stand_torque_limits: [70.4, 111.2, 70.4, 111.2,  50.,  50.,
+                      70.4, 111.2, 70.4, 111.2,  50.,  50.]
+delta_torque_scale: 1.5
+
+qpos_filter_alpha:    0.2
+qvel_filter_alpha:    0.15
+com_vel_filter_alpha: 0.15
+
+# ---- Arm / waist (15 DOF) ----
+# Neutral standing pose targets
+arm_waist_kps: [300, 100, 100, 50, 50, 20, 20, 20,
+                     100, 100, 50, 50, 20, 20, 20]
+arm_waist_kds: [3, 2, 2, 2, 2, 1, 1, 1,
+                   2, 2, 2, 2, 1, 1, 1]
+# Neutral stance: arms slightly forward, elbows bent
+arm_waist_target: [0,
+                   0,  0.5, 0, 1.5, 0, 0,  0.5,
+                   0, -0.5, 0, 1.5, 0, 0, -0.5]
+
+# ---- Model metadata ----
+num_actions: 12
+num_obs:     47
+
+# ---- QP solver ----
+qp_params:
+  mu:               0.5
+  cop_x_max:        0.15
+  cop_y_max:        0.035
+  torsion_ratio:    0.02
+  w_base:           1.0e6
+  w_total:          1.0e6
+  w_split:          1.0e3
+  w_tan:            5.0e2
+  w_yaw:            1.0e2
+  w_reg:            1.0e-6
+  w_smooth:         2.0e3
+  gamma:            0.5
+  vel_alpha:        0.2
+  coriolis_scale_ank: 0.2
+  coriolis_clip_Nm:   10.0
