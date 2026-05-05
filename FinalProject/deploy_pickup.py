@@ -1,5 +1,4 @@
 """
-deploy_pickup.py  —  HW Final Project
 Run:  mjpython deploy_pickup.py
 """
 

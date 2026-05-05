@@ -14,10 +14,10 @@ import numpy as np
 
 class NavController:
     def __init__(self,
-                 kp_fwd:       float = 0.04,
-                 kp_yaw:       float = 0.12,
-                 max_pitch:    float = 0.06,
-                 max_yaw:      float = 0.10,
+                 kp_fwd:       float = 0.020,
+                 kp_yaw:       float = 0.10,
+                 max_pitch:    float = 0.03,
+                 max_yaw:      float = 0.08,
                  arrival_r:    float = 0.70,
                  yaw_gate:     float = 0.15):
         self.kp_fwd    = kp_fwd
@@ -66,12 +66,11 @@ class NavController:
            R_ankle_pitch(10), R_ankle_roll(11)]
         """
         t = leg_targets.copy()
-        # Forward lean on both hip pitches
+        # Forward lean: positive pitch_bias bends the torso forward at the hips.
         t[0] += pitch_bias
         t[6] += pitch_bias
-        # Ankle compensation to keep foot flat
-        t[4]  -= 0.5 * pitch_bias
-        t[10] -= 0.5 * pitch_bias
+        t[4]  += 0.5 * pitch_bias
+        t[10] += 0.5 * pitch_bias
         # Yaw: asymmetric hip yaw
         t[2] +=  yaw_bias
         t[8] -= yaw_bias

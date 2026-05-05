@@ -109,8 +109,24 @@ class PickupCtrl:
             leg_tgt = self.nav.apply_bias(leg_tgt, pb, yb)
 
         # ---- Always use QP-balanced StandingCtrl ----
+        # Tell the standing controller which phase we're in so it can scale
+        # F_com appropriately during walking (see standing_ctrl line ~646).
+        # Without this, F_com runs at full gain and actively fights the lean.
+        self.standing.phase = phase.name
+
+        # Smooth the standing-target transition.  When phase changes,
+        # leg_tgt can step by tens of degrees (e.g. STAND -> SQUAT), and
+        # the position-PD term P = kp * (standing_angles - q_joints) would
+        # produce an impulsive torque.  Low-pass the target instead.
+        new_leg_tgt = leg_tgt.astype(np.float32)
+        if not hasattr(self, "_leg_tgt_filt") or self._leg_tgt_filt is None:
+            self._leg_tgt_filt = new_leg_tgt.copy()
+        else:
+            a = 0.15   # ~70 ms time constant at 100 Hz control
+            self._leg_tgt_filt = a * new_leg_tgt + (1 - a) * self._leg_tgt_filt
+
         self.standing.arm_waist_target = arm_tgt
-        self.standing.standing_angles  = leg_tgt.astype(np.float32)
+        self.standing.standing_angles  = self._leg_tgt_filt
         tau, info = self.standing.compute_torque(qpos, qvel)
 
         info['phase']      = phase.name
@@ -131,6 +147,7 @@ class PickupCtrl:
         self._started   = False
         self._sim_time  = 0.0
         self._grasped   = [False, False]
+        self._leg_tgt_filt = None
         self._set_weld("grasp_item1", False)
         self._set_weld("grasp_item2", False)
 

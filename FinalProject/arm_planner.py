@@ -47,11 +47,13 @@ POSE_NEUTRAL = np.array([
      0.0, -0.5,  0.0,  1.5,  0.0,  0.0, -0.5,   # right arm
 ], dtype=np.float64)
 
-# Arms raised slightly forward — used while walking to item / table
+# Arms relaxed at sides — used while walking to item / table
+# (kept symmetric with POSE_NEUTRAL so the transition out of STAND does
+#  not visibly swing the right arm forward)
 POSE_CARRY = np.array([
      0.0,
-     0.0,  0.4,  0.0,  1.2,  0.0,  0.0,  0.4,   # left
-    -0.3, -0.3,  0.0,  0.8,  0.0,  0.0, -0.3,   # right arm forward
+     0.0,  0.4,  0.0,  1.3,  0.0,  0.0,  0.4,   # left  — slight bend, tucked
+     0.0, -0.4,  0.0,  1.3,  0.0,  0.0, -0.4,   # right — mirror of left
 ], dtype=np.float64)
 
 # Right arm reaching down and forward to floor level

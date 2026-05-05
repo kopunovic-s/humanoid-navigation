@@ -643,9 +643,12 @@ class StandingCtrl:
 
         F_com = self._com_pid_control(target_com, current_com, com_vel)
 
-        if hasattr(self, "phase"):
-            if self.phase in ["WALK_TO_ITEM", "WALK_TO_DROP"]:
-                F_com *= 0.2   # or 0.0 for full disable
+        # if hasattr(self, "phase"):
+        #     if self.phase in ["WALK_TO_ITEM", "WALK_TO_DROP"]:
+        #         F_com[0] += 50.0   # forward push
+        #         F_com *= 0.3       # reduce stiffness
+                # P *= 0.3
+                # D *= 0.3
 
         self.dynamics.set_state(qpos, qvel)
 
@@ -661,10 +664,17 @@ class StandingCtrl:
         M_pitch = -r_CoM[2] * F_com[0]
         M_roll = r_CoM[2] * F_com[1]
         tau_com = np.zeros(self.num_joints)
-        tau_com[4] = self.ankle_pitch_scale * M_pitch / 2
-        tau_com[5] = self.ankle_roll_scale * M_roll / 2
-        tau_com[10] = self.ankle_pitch_scale * M_pitch / 2
-        tau_com[11] = self.ankle_roll_scale * M_roll / 2
+        # tau_com[4] = self.ankle_pitch_scale * M_pitch / 2
+        # tau_com[5] = self.ankle_roll_scale * M_roll / 2
+        # tau_com[10] = self.ankle_pitch_scale * M_pitch / 2
+        # tau_com[11] = self.ankle_roll_scale * M_roll / 2
+
+        if stance_foot == "left":
+            tau_com[4]  = self.ankle_pitch_scale * M_pitch
+            tau_com[5]  = self.ankle_roll_scale  * M_roll
+        else:
+            tau_com[10] = self.ankle_pitch_scale * M_pitch
+            tau_com[11] = self.ankle_roll_scale  * M_roll
 
         M_hip = self.hip_roll_scale * r_CoM[2] * F_com[1]
         tau_com[2] = M_hip / 2

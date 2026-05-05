@@ -1,20 +1,7 @@
 """
-task_state.py  —  HW Final Project
-
 Cycling 9-phase pick-and-place state machine.
-
-Per-item flow:
-  STAND -> WALK_TO_ITEM -> REACH_DOWN -> GRASP_OBJECT -> LIFT_OBJECT
-        -> WALK_TO_DROP  -> PLACE_OBJECT -> RELEASE -> RETURN_TO_STAND
-        -> (RETURN_TO_STAND advances item_index; if more items remain,
-            jumps back to WALK_TO_ITEM for the next item; otherwise DONE)
-
-NOTE: do NOT add WALK_TO_ITEM2 / REACH_DOWN2 / ... etc.  ArmPlanner only
-maps the 9 phase names listed below — any unknown phase falls through to
-POSE_NEUTRAL/LEG_STAND, which causes a hard pose snap mid-task.
 """
 from enum import Enum, auto
-
 
 class Phase(Enum):
     STAND           = auto()
@@ -31,9 +18,6 @@ class Phase(Enum):
 
 PHASE_LABELS = {p: p.name for p in Phase}
 
-# Minimum dwell time per phase (seconds) before the controller is
-# allowed to advance.  Walking phases also need their proximity check
-# satisfied; the dwell here is just a floor.
 PHASE_MIN_DWELL = {
     Phase.STAND:           5.0,
     Phase.WALK_TO_ITEM:    1.0,
