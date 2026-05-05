@@ -1,6 +1,4 @@
-# Two ways to make the robot stand:
-#   1. Write your own controller using standing_ctrl_template.py, rename it to standing_ctrl.py
-#   2. Tune configs/g1.yaml so this controller works (see standing_ctrl.md for parameter docs)
+from curses import raw
 
 import mujoco
 import numpy as np
@@ -317,6 +315,12 @@ class StandingCtrl:
         self.config = self._load_config(config_path)
 
         xml_path = self.config['xml_path'].replace('{DIR}', self.config_dir)
+        # If a separate robot-only XML is specified, use it for the dynamics
+        # model so that scene objects (cubes, table) don't pollute nq/nv or
+        # corrupt the initial qpos that get_initial_state() returns.
+        robot_xml_path = self.config.get('robot_xml_path', xml_path)
+        if robot_xml_path != xml_path:
+            robot_xml_path = robot_xml_path.replace('{DIR}', self.config_dir)
 
         self.simulation_dt = self.config.get('simulation_dt', 0.002)
         self.control_decimation = self.config.get('control_decimation', 10)
@@ -332,7 +336,7 @@ class StandingCtrl:
         self.arm_qvel_start = 6 + self.num_joints
 
         self.dynamics = LagrangianDynamics(
-            xml_path,
+            robot_xml_path,
             left_foot_body=left_foot_body,
             right_foot_body=right_foot_body
         )
@@ -547,6 +551,8 @@ class StandingCtrl:
         return np.clip(F_com, -self.com_max_force, self.com_max_force)
 
     def _apply_torque_limits(self, tau: np.ndarray) -> np.ndarray:
+        alpha_tau = 0.2
+        leg_tau = alpha_tau * tau + (1 - alpha_tau) * self._prev_torque
         delta_tau = tau - self._prev_torque
         clip_delta_tau = np.clip(delta_tau, -self.delta_torque, self.delta_torque)
         commanded_tau = self._prev_torque + clip_delta_tau
@@ -576,7 +582,7 @@ class StandingCtrl:
         try:
             qp = self.qp_params
             tau_cg, M_standing, h, wL, wR = self.dynamics.compute_MCG(
-                qpos_standing, qvel_zero,
+                qpos, qvel,
                 use_velocity_terms=False,
                 mu=qp['mu'],
                 cop_x_max=qp['cop_x_max'],
@@ -637,11 +643,19 @@ class StandingCtrl:
 
         F_com = self._com_pid_control(target_com, current_com, com_vel)
 
+        if hasattr(self, "phase"):
+            if self.phase in ["WALK_TO_ITEM", "WALK_TO_DROP"]:
+                F_com *= 0.2   # or 0.0 for full disable
+
         self.dynamics.set_state(qpos, qvel)
 
         foot_L_world = self._foot_world_pos_standing['left']
         foot_R_world = self._foot_world_pos_standing['right']
-        pivot_pos = (foot_L_world + foot_R_world) / 2
+        # pivot_pos = (foot_L_world + foot_R_world) / 2
+        if stance_foot == "left":
+            pivot_pos = foot_L_world
+        else:
+            pivot_pos = foot_R_world
         r_CoM = current_com - pivot_pos
 
         M_pitch = -r_CoM[2] * F_com[0]
@@ -669,7 +683,11 @@ class StandingCtrl:
 
         P = self.full_stand_kps_tau * (self.standing_angles - q_joints)
         D = self.full_stand_kds_tau * (np.zeros(self.num_joints) - qvel[6:6 + self.num_joints])
+        #tau_raw = tau_cg + tau_com + P + D
+        # tau_raw = tau_cg + P + D
+        
         tau_raw = tau_cg + tau_com + P + D
+        tau_raw = np.clip(tau_raw, -120, 120)
 
         info['tau_com'] = tau_com
         info['P'] = P
@@ -683,8 +701,8 @@ class StandingCtrl:
         return tau_full, info
 
     def compute_arm_torque(self, qpos: np.ndarray, qvel: np.ndarray) -> np.ndarray:
-        arm_qpos = qpos[self.arm_qpos_start:]
-        arm_qvel = qvel[self.arm_qvel_start:]
+        arm_qpos = qpos[self.arm_qpos_start:self.arm_qpos_start + self.num_arm_joints]
+        arm_qvel = qvel[self.arm_qvel_start:self.arm_qvel_start + self.num_arm_joints]
         return self.arm_waist_kps * (self.arm_waist_target - arm_qpos) + self.arm_waist_kds * (0 - arm_qvel)
 
     def reset(self) -> None:

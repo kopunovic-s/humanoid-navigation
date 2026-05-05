@@ -141,13 +141,13 @@ class ArmPlanner:
     DURATIONS = {
         "STAND":           0.5,
         "WALK_TO_ITEM":    0.5,
-        "REACH_DOWN":      2.0,
-        "GRASP_OBJECT":    0.2,
-        "LIFT_OBJECT":     1.5,
-        "WALK_TO_TABLE":   0.5,
-        "PLACE_OBJECT":    2.0,
-        "RELEASE":         0.2,
-        "RETURN_TO_STAND": 2.0,
+        "REACH_DOWN":      2.5,
+        "GRASP_OBJECT":    0.6,
+        "LIFT_OBJECT":     2.0,
+        "WALK_TO_DROP":    0.5,   # renamed from WALK_TO_TABLE
+        "PLACE_OBJECT":    2.5,
+        "RELEASE":         0.6,
+        "RETURN_TO_STAND": 2.5,
         "DONE":            0.5,
     }
 
@@ -198,22 +198,22 @@ class ArmPlanner:
             arm = lerp(POSE_REACH_GRASP, POSE_CARRY_OBJECT, t)
             leg = lerp(LEG_SQUAT,        LEG_STAND,          t)
 
-        elif phase_label == "WALK_TO_TABLE":
+        elif phase_label == "WALK_TO_DROP":
             arm = POSE_CARRY_OBJECT.copy()
             leg = LEG_STAND.copy()
 
         elif phase_label == "PLACE_OBJECT":
-            # Extend arm toward table, mild knee bend
-            arm = lerp(POSE_CARRY_OBJECT, POSE_PLACE,       t)
-            leg = lerp(LEG_STAND,         LEG_HALF_SQUAT,   t)
+            # Lower arm back to floor level to place cube on ground
+            arm = lerp(POSE_CARRY_OBJECT, POSE_REACH_GRASP, t)
+            leg = lerp(LEG_STAND,         LEG_SQUAT,        t)
 
         elif phase_label == "RELEASE":
-            arm = POSE_PLACE.copy()
-            leg = LEG_HALF_SQUAT.copy()
+            arm = POSE_REACH_GRASP.copy()
+            leg = LEG_SQUAT.copy()
 
         elif phase_label == "RETURN_TO_STAND":
-            arm = lerp(POSE_PLACE,  POSE_NEUTRAL, t)
-            leg = lerp(LEG_HALF_SQUAT, LEG_STAND, t)
+            arm = lerp(POSE_REACH_GRASP, POSE_NEUTRAL, t)
+            leg = lerp(LEG_SQUAT,        LEG_STAND,    t)
 
         else:  # DONE or unknown
             arm = POSE_NEUTRAL.copy()

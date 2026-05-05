@@ -1,22 +1,18 @@
-# g1_pickup.yaml  —  HW Final Project
-# =========================================
-# Extends HW3 g1.yaml with pickup-task parameters.
-# All HW3 balance / QP parameters are preserved below.
-
 # ---- Scene & timing ----
 pickup_scene: "{DIR}/resources/g1/scene_pickup.xml"
 xml_path:     "{DIR}/resources/g1/scene_pickup.xml"
+robot_xml_path: "{DIR}/resources/g1/scene_27dof.xml"
 
-simulation_duration: 180     # 3 minutes — enough for 2-item sequence
+simulation_duration: 300     # 5 minutes — enough for 2-item sequence with 10m travel
 simulation_dt:       0.002
-control_decimation:  10
+control_decimation:  5
 
 # ---- Standing balance (unchanged from HW3) ----
-stand_CoM: [0, 0, 0.751]
+stand_CoM: [0, 0, 0.770]   # pelvis Z that puts foot pads at z≈0 (no penetration, no float)
 
-CoM_kps: [1200, 1200, 0]
-CoM_kis: [30, 60, 0]
-CoM_kds: [300, 350, 0]
+CoM_kps: [200, 200, 0]
+CoM_kis: [10, 10, 0]
+CoM_kds: [50, 60, 0]
 CoM_max_force:    500.0
 CoM_max_integral: 0.5
 
@@ -25,10 +21,10 @@ stand_kps_tau: [50, 20, 20, 50, 5, 5,
 stand_kds_tau: [15, 10, 10, 15, 5, 5,
                 15, 10, 10, 15, 5, 5]
 
-full_stand_kps_tau: [60, 60, 25, 60, 8, 8,
-                     60, 60, 25, 60, 8, 8]
-full_stand_kds_tau: [15, 15, 10, 15, 6, 6,
-                     15, 15, 10, 15, 6, 6]
+full_stand_kps_tau: [30, 30, 15, 30, 5, 5,
+                     30, 30, 15, 30, 5, 5]
+full_stand_kds_tau: [10, 10, 6, 10, 4, 4,
+                     10, 10, 6, 10, 4, 4]
 
 hip_roll_scale:   0.5
 hip_pitch_scale:  0.3
@@ -72,14 +68,14 @@ qp_params:
   cop_x_max:        0.15
   cop_y_max:        0.035
   torsion_ratio:    0.02
-  w_base:           1.0e6
-  w_total:          1.0e6
-  w_split:          1.0e3
+  w_base:           1e4
+  w_total:          1e4
+  w_split:          1e2
   w_tan:            5.0e2
   w_yaw:            1.0e2
   w_reg:            1.0e-6
-  w_smooth:         2.0e3
+  w_smooth:         5e2
   gamma:            0.5
-  vel_alpha:        0.2
+  vel_alpha:        0.05
   coriolis_scale_ank: 0.2
   coriolis_clip_Nm:   10.0

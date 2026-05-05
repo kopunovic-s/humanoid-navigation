@@ -1,7 +1,7 @@
 <mujoco model="g1 pickup scene">
   <include file="g1_27dof.xml"/>
 
-  <statistic center="1.0 0.7 1.0" extent="1.5"/>
+  <statistic center="3.0 -2.0 1.0" extent="12.0"/>
 
   <visual>
     <headlight diffuse="0.6 0.6 0.6" ambient="0.1 0.1 0.1" specular="0.9 0.9 0.9"/>
@@ -14,81 +14,60 @@
     <texture type="skybox" builtin="flat" rgb1="0.15 0.2 0.3" rgb2="0.05 0.1 0.15" width="512" height="3072"/>
     <texture type="2d" name="groundplane" builtin="checker" mark="edge"
              rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3" markrgb="0.8 0.8 0.8" width="300" height="300"/>
-    <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0.2"/>
+    <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="20 20" reflectance="0.2"/>
     <material name="cube_red"   rgba="0.9 0.2 0.2 1"/>
     <material name="cube_blue"  rgba="0.2 0.4 0.9 1"/>
     <material name="table_mat"  rgba="0.7 0.55 0.35 1"/>
     <material name="dropzone"   rgba="0.2 0.8 0.3 0.7"/>
-    <material name="finger_mat" rgba="0.3 0.3 0.3 1"/>
   </asset>
 
   <worldbody>
-    <light pos="0 0 4" dir="0 0 -1" directional="true"/>
-    <light pos="2 2 3" dir="-1 -1 -1" directional="false" diffuse="0.4 0.4 0.4"/>
+    <light pos="0 0 6" dir="0 0 -1" directional="true"/>
+    <light pos="5 -5 5" dir="-1 1 -1" directional="false" diffuse="0.4 0.4 0.4"/>
 
-    <!-- Ground -->
-    <geom name="floor" size="0 0 0.05" type="plane" material="groundplane" condim="3" friction="0.9 0.005 0.0001"/>
+    <!-- Ground — large enough for 10m navigation -->
+    <geom name="floor" size="0 0 0.05" type="plane" material="groundplane"
+          condim="3" friction="0.9 0.005 0.0001"/>
 
-    <!-- World axes -->
-    <body name="world_axes" pos="0 0 0">
-      <geom type="cylinder" fromto="0 0 0 0.3 0 0" size="0.006" rgba="1 0 0 1"/>
-      <geom type="cylinder" fromto="0 0 0 0 0.3 0" size="0.006" rgba="0 1 0 1"/>
-      <geom type="cylinder" fromto="0 0 0 0 0 0.3" size="0.006" rgba="0 0 1 1"/>
+    <!-- Robot spawn marker (origin) -->
+    <body name="spawn_marker" pos="0 0 0">
+      <geom type="cylinder" fromto="0 0 0 0.4 0 0" size="0.01" rgba="1 0 0 1"/>
+      <geom type="cylinder" fromto="0 0 0 0 0.4 0" size="0.01" rgba="0 1 0 1"/>
     </body>
 
-    <!-- ===== ITEM 1 (red cube) ===== -->
-    <!-- Placed 1.5m in front-left of robot spawn (robot at 0,0) -->
-    <body name="item1" pos="1.5 0.4 0.035">
+    <!-- ===== ITEM 1 (red cube) — 5m directly in front of robot ===== -->
+    <body name="item1" pos="3.0 0.0 0.05">
       <freejoint name="item1_joint"/>
-      <geom name="item1_geom" type="box" size="0.035 0.035 0.035"
+      <geom name="item1_geom" type="box" size="0.05 0.05 0.05"
             material="cube_red" condim="4" friction="1.0 0.005 0.0001" mass="0.3"/>
     </body>
 
-    <!-- ===== ITEM 2 (blue cube) ===== -->
-    <!-- Placed 1.5m in front-right of robot spawn -->
-    <body name="item2" pos="1.5 -0.4 0.035">
+    <!-- ===== ITEM 2 (blue cube) — 10m to the left of robot ===== -->
+    <!-- Robot faces +X, so left is +Y in world frame -->
+    <body name="item2" pos="0.0 5.0 0.05">
       <freejoint name="item2_joint"/>
-      <geom name="item2_geom" type="box" size="0.035 0.035 0.035"
+      <geom name="item2_geom" type="box" size="0.05 0.05 0.05"
             material="cube_blue" condim="4" friction="1.0 0.005 0.0001" mass="0.3"/>
     </body>
 
-    <!-- ===== DROP-OFF TABLE ===== -->
-    <!-- Located 3m ahead of robot, items placed on top surface -->
-    <body name="table" pos="3.2 0 0">
-      <!-- Table top -->
-      <geom name="table_top"  type="box" size="0.4 0.35 0.025" pos="0 0 0.7"
+    <!-- ===== DROP-OFF TABLE — 6.5m ahead ===== -->
+    <body name="table" pos="6.5 0 0">
+      <geom name="table_top"  type="box" size="0.5 0.4 0.025" pos="0 0 0.7"
             material="table_mat" condim="3" friction="0.8 0.005 0.0001"/>
-      <!-- Table legs -->
-      <geom type="box" size="0.03 0.03 0.35" pos=" 0.35  0.30 0.35" material="table_mat"/>
-      <geom type="box" size="0.03 0.03 0.35" pos="-0.35  0.30 0.35" material="table_mat"/>
-      <geom type="box" size="0.03 0.03 0.35" pos=" 0.35 -0.30 0.35" material="table_mat"/>
-      <geom type="box" size="0.03 0.03 0.35" pos="-0.35 -0.30 0.35" material="table_mat"/>
-      <!-- Drop-zone markers on table surface -->
-      <geom name="dropzone1" type="box" size="0.08 0.08 0.003" pos="0.15  0.15 0.726"
+      <geom type="box" size="0.04 0.04 0.35" pos=" 0.44  0.34 0.35" material="table_mat"/>
+      <geom type="box" size="0.04 0.04 0.35" pos="-0.44  0.34 0.35" material="table_mat"/>
+      <geom type="box" size="0.04 0.04 0.35" pos=" 0.44 -0.34 0.35" material="table_mat"/>
+      <geom type="box" size="0.04 0.04 0.35" pos="-0.44 -0.34 0.35" material="table_mat"/>
+      <!-- Drop-zone markers -->
+      <geom name="dropzone1" type="box" size="0.09 0.09 0.003" pos="0.2  0.15 0.726"
             material="dropzone" contype="0" conaffinity="0"/>
-      <geom name="dropzone2" type="box" size="0.08 0.08 0.003" pos="0.15 -0.15 0.726"
+      <geom name="dropzone2" type="box" size="0.09 0.09 0.003" pos="0.2 -0.15 0.726"
             material="dropzone" contype="0" conaffinity="0"/>
     </body>
 
-    <!-- ===== SIMPLE RIGHT-HAND GRIPPER FINGERS ===== -->
-    <!-- Two box fingers attached as fixed bodies to right_wrist_yaw_link -->
-    <!-- They are welded (no joints) — gripper close/open is simulated by
-         the arm controller moving them into contact with the cube, and
-         object attachment is handled in code via weld equality constraint. -->
-
-    <!-- NOTE: finger bodies are defined at the wrist-yaw child level via
-         the include; we add them here as world bodies with site references
-         so the deploy script can identify them. In practice the weld
-         equality constraint in the controller is what "grasps" the object. -->
-
-    <!-- Gripper finger visual markers (attached to wrist in code) -->
-    <site name="right_gripper_center" pos="0 0 0" size="0.01" rgba="1 1 0 0.5"/>
-    <site name="left_gripper_center"  pos="0 0 0" size="0.01" rgba="1 1 0 0.5"/>
-
   </worldbody>
 
-  <!-- Equality constraints for object attachment (enabled/disabled by controller) -->
-  <!-- item1 weld to right wrist -->
+  <!-- Equality weld constraints for grasping (activated by controller) -->
   <equality>
     <weld name="grasp_item1" body1="right_wrist_yaw_link" body2="item1"
           relpose="0.12 0 -0.03   1 0 0 0" active="false"/>
