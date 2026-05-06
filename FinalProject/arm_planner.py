@@ -56,33 +56,33 @@ POSE_CARRY = np.array([
      0.0, -0.4,  0.0,  1.3,  0.0,  0.0, -0.4,   # right — mirror of left
 ], dtype=np.float64)
 
-# Right arm reaching down and forward to floor level
-# shoulder pitch ~1.6 rad (forward), elbow bent ~1.8 rad (reaching down)
+# Right arm reaching visibly down and forward.  Grasping is still implemented by
+# a weld, but this pose makes the pre-grasp motion obvious in the viewer.
 POSE_REACH_DOWN = np.array([
      0.0,
      0.0,  0.5,  0.0,  1.5,  0.0,  0.0,  0.5,   # left arm neutral
-     1.55, -0.25, 0.0,  1.80, 0.0,  0.0, -0.4,   # right arm extended down
+    -0.60, -0.32, 0.0,  1.65, 0.0,  0.20, -0.35,
 ], dtype=np.float64)
 
 # Slight variation of reach-down — wrist pitched down to approach cube
 POSE_REACH_GRASP = np.array([
      0.0,
      0.0,  0.5,  0.0,  1.5,  0.0,  0.0,  0.5,
-     1.60, -0.20, 0.0,  1.85, 0.0,  0.35, -0.4,
+    -0.72, -0.30, 0.0,  1.90, 0.0,  0.45, -0.35,
 ], dtype=np.float64)
 
 # Right arm lifted to carry height (waist level, object in hand)
 POSE_CARRY_OBJECT = np.array([
      0.0,
      0.0,  0.5,  0.0,  1.5,  0.0,  0.0,  0.5,
-     0.80, -0.30, 0.0,  1.40, 0.0,  0.0, -0.3,
+    -0.20, -0.34, 0.0,  1.35, 0.0,  0.0, -0.3,
 ], dtype=np.float64)
 
-# Right arm extended forward to place object on table
+# Right arm extended forward to place object on the tabletop.
 POSE_PLACE = np.array([
-     0.0,
+     0.08,
      0.0,  0.5,  0.0,  1.5,  0.0,  0.0,  0.5,
-     1.20, -0.20, 0.0,  1.20, 0.0,  0.20, -0.3,
+    -0.45, -0.18, 0.0,  1.15, 0.0,  0.10, -0.25,
 ], dtype=np.float64)
 
 
@@ -99,16 +99,18 @@ LEG_STAND = np.array([
     -0.20, 0.00, 0.00,  0.59, -0.34, 0.00,
 ], dtype=np.float64)
 
-# Deeper squat — bend knees and hips to lower CoM ~0.25m for pickup
+# Stable pickup crouch.  The cube attach is handled by a weld, so this pose only
+# needs to visually lower the robot without pushing the balance controller past
+# its fixed-foot comfort zone after a walking phase.
 LEG_SQUAT = np.array([
-    -0.55, 0.00, 0.00,  1.10, -0.55, 0.00,
-    -0.55, 0.00, 0.00,  1.10, -0.55, 0.00,
+    -0.72, 0.00, 0.00,  1.35, -0.68, 0.00,
+    -0.72, 0.00, 0.00,  1.35, -0.68, 0.00,
 ], dtype=np.float64)
 
 # Shallow squat — mid-way between stand and full squat
 LEG_HALF_SQUAT = np.array([
-    -0.38, 0.00, 0.00,  0.80, -0.44, 0.00,
-    -0.38, 0.00, 0.00,  0.80, -0.44, 0.00,
+    -0.50, 0.00, 0.00,  1.00, -0.52, 0.00,
+    -0.50, 0.00, 0.00,  1.00, -0.52, 0.00,
 ], dtype=np.float64)
 
 
@@ -143,8 +145,8 @@ class ArmPlanner:
     DURATIONS = {
         "STAND":           0.5,
         "WALK_TO_ITEM":    0.5,
-        "REACH_DOWN":      2.5,
-        "GRASP_OBJECT":    0.6,
+        "REACH_DOWN":      4.0,
+        "GRASP_OBJECT":    1.4,
         "LIFT_OBJECT":     2.0,
         "WALK_TO_DROP":    0.5,   # renamed from WALK_TO_TABLE
         "PLACE_OBJECT":    2.5,
@@ -205,17 +207,18 @@ class ArmPlanner:
             leg = LEG_STAND.copy()
 
         elif phase_label == "PLACE_OBJECT":
-            # Lower arm back to floor level to place cube on ground
-            arm = lerp(POSE_CARRY_OBJECT, POSE_REACH_GRASP, t)
-            leg = lerp(LEG_STAND,         LEG_SQUAT,        t)
+            # Shallow crouch and a small waist yaw while leaning the right arm
+            # forward to the tabletop drop zone.
+            arm = lerp(POSE_CARRY_OBJECT, POSE_PLACE,       t)
+            leg = lerp(LEG_STAND,         LEG_HALF_SQUAT,   t)
 
         elif phase_label == "RELEASE":
-            arm = POSE_REACH_GRASP.copy()
-            leg = LEG_SQUAT.copy()
+            arm = POSE_PLACE.copy()
+            leg = LEG_HALF_SQUAT.copy()
 
         elif phase_label == "RETURN_TO_STAND":
-            arm = lerp(POSE_REACH_GRASP, POSE_NEUTRAL, t)
-            leg = lerp(LEG_SQUAT,        LEG_STAND,    t)
+            arm = lerp(POSE_PLACE,      POSE_NEUTRAL, t)
+            leg = lerp(LEG_HALF_SQUAT,  LEG_STAND,    t)
 
         else:  # DONE or unknown
             arm = POSE_NEUTRAL.copy()

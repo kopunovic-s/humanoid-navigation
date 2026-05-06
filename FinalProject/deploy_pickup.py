@@ -70,19 +70,12 @@ def simulate(ctrl: PickupCtrl, duration: float = None, log: bool = True):
     ctrl.sim_model = sim_model
     ctrl.sim_data  = sim_data
 
-    # Re-resolve body/equality IDs against this model instance
-    import mujoco as mj
-    def bid(n): return mj.mj_name2id(sim_model, mj.mjtObj.mjOBJ_BODY, n)
-    def eid(n): return mj.mj_name2id(sim_model, mj.mjtObj.mjOBJ_EQUALITY, n)
-    ctrl.body_item1 = bid("item1")
-    ctrl.body_item2 = bid("item2")
-    ctrl.eq_ids     = [eid("grasp_item1"), eid("grasp_item2")]
+    # Re-resolve body/equality/freejoint IDs against this model instance.
+    ctrl._resolve_ids()
 
     # Disable all welds at start
     for name in ("grasp_item1", "grasp_item2"):
-        e = eid(name)
-        if e >= 0:
-            sim_model.eq_active0[e] = 0
+        ctrl._set_weld(name, False)
 
     # Set initial robot pose without disturbing object positions
     robot_qpos = ctrl.get_initial_state()['qpos']
@@ -118,8 +111,7 @@ def simulate(ctrl: PickupCtrl, duration: float = None, log: bool = True):
                 sim_data.qpos[:robot_nq] = robot_qpos
                 sim_data.qvel[:] = 0.0
                 for name in ("grasp_item1", "grasp_item2"):
-                    e = eid(name)
-                    if e >= 0: sim_model.eq_active0[e] = 0
+                    ctrl._set_weld(name, False)
                 ctrl.reset()
                 tau = np.zeros(ctrl.num_actuators)
                 mujoco.mj_forward(sim_model, sim_data)

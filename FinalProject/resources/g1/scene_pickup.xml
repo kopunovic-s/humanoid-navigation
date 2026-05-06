@@ -1,7 +1,7 @@
 <mujoco model="g1 pickup scene">
   <include file="g1_27dof.xml"/>
 
-  <statistic center="3.0 -2.0 1.0" extent="12.0"/>
+  <statistic center="1.8 0.0 1.0" extent="4.5"/>
 
   <visual>
     <headlight diffuse="0.6 0.6 0.6" ambient="0.1 0.1 0.1" specular="0.9 0.9 0.9"/>
@@ -25,33 +25,36 @@
     <light pos="0 0 6" dir="0 0 -1" directional="true"/>
     <light pos="5 -5 5" dir="-1 1 -1" directional="false" diffuse="0.4 0.4 0.4"/>
 
-    <!-- Ground — large enough for 10m navigation -->
+    <!-- Ground — large enough for the two round trips. -->
     <geom name="floor" size="0 0 0.05" type="plane" material="groundplane"
           condim="3" friction="0.9 0.005 0.0001"/>
 
-    <!-- Robot spawn marker (origin) -->
+    <!-- Robot spawn marker: 0.3 m diameter allowed spawn disk at origin. -->
     <body name="spawn_marker" pos="0 0 0">
-      <geom type="cylinder" fromto="0 0 0 0.4 0 0" size="0.01" rgba="1 0 0 1"/>
-      <geom type="cylinder" fromto="0 0 0 0 0.4 0" size="0.01" rgba="0 1 0 1"/>
+      <geom type="cylinder" size="0.15 0.003" pos="0 0 0.003"
+            rgba="1 1 1 0.18" contype="0" conaffinity="0"/>
+      <geom type="cylinder" fromto="-0.15 0 0.01 0.15 0 0.01" size="0.004"
+            rgba="1 0 0 1" contype="0" conaffinity="0"/>
+      <geom type="cylinder" fromto="0 -0.15 0.01 0 0.15 0.01" size="0.004"
+            rgba="0 1 0 1" contype="0" conaffinity="0"/>
     </body>
 
-    <!-- ===== ITEM 1 (red cube) — 5m directly in front of robot ===== -->
-    <body name="item1" pos="3.0 0.0 0.05">
+    <!-- ===== ITEM 1 (red cube) — in front of robot ===== -->
+    <body name="item1" pos="1.5 0.22 0.05">
       <freejoint name="item1_joint"/>
       <geom name="item1_geom" type="box" size="0.05 0.05 0.05"
             material="cube_red" condim="4" friction="1.0 0.005 0.0001" mass="0.3"/>
     </body>
 
-    <!-- ===== ITEM 2 (blue cube) — 10m to the left of robot ===== -->
-    <!-- Robot faces +X, so left is +Y in world frame -->
-    <body name="item2" pos="0.0 5.0 0.05">
+    <!-- ===== ITEM 2 (blue cube) — also in front of robot ===== -->
+    <body name="item2" pos="1.5 -0.22 0.05">
       <freejoint name="item2_joint"/>
       <geom name="item2_geom" type="box" size="0.05 0.05 0.05"
             material="cube_blue" condim="4" friction="1.0 0.005 0.0001" mass="0.3"/>
     </body>
 
-    <!-- ===== DROP-OFF TABLE — 6.5m ahead ===== -->
-    <body name="table" pos="6.5 0 0">
+    <!-- ===== DROP-OFF TABLE — in front of the two cubes ===== -->
+    <body name="table" pos="3.15 0 0">
       <geom name="table_top"  type="box" size="0.5 0.4 0.025" pos="0 0 0.7"
             material="table_mat" condim="3" friction="0.8 0.005 0.0001"/>
       <geom type="box" size="0.04 0.04 0.35" pos=" 0.44  0.34 0.35" material="table_mat"/>

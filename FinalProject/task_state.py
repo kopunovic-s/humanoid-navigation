@@ -21,8 +21,8 @@ PHASE_LABELS = {p: p.name for p in Phase}
 PHASE_MIN_DWELL = {
     Phase.STAND:           5.0,
     Phase.WALK_TO_ITEM:    1.0,
-    Phase.REACH_DOWN:      2.5,
-    Phase.GRASP_OBJECT:    0.6,
+    Phase.REACH_DOWN:      4.0,
+    Phase.GRASP_OBJECT:    1.4,
     Phase.LIFT_OBJECT:     2.0,
     Phase.WALK_TO_DROP:    1.0,
     Phase.PLACE_OBJECT:    2.5,

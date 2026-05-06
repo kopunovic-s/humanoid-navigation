@@ -8,7 +8,7 @@ in MuJoCo, building on:
 | Homework | Component Used |
 |----------|----------------|
 | HW1      | State-machine architecture (`TaskStateManager`) |
-| HW2      | Navigation controller design (Kalman-filter + planner concepts) |
+| HW2      | TorchScript walking policy and waypoint command pipeline |
 | HW3      | `StandingCtrl` (Lagrangian QP balance), `Pushover` disturbance |
 
 ---
@@ -21,7 +21,8 @@ FinalProject/
 ├── pickup_ctrl.py          ← Main controller integrating all subsystems
 ├── task_state.py           ← HW1-style state machine (9 task phases)
 ├── arm_planner.py          ← Pose library + smooth interpolation per phase
-├── nav_controller.py       ← Base steering toward waypoints
+├── nav_controller.py       ← Base waypoint tracking and fallback lean steering
+├── locomotion_policy.py    ← HW2 TorchScript locomotion-policy adapter
 ├── standing_ctrl.py        ← HW3 StandingCtrl (unchanged)
 ├── pushover.py             ← HW3 Pushover (unchanged)
 ├── requirements.txt
@@ -42,20 +43,20 @@ The state machine cycles through these phases for **each item** in order:
 
 ```
 STAND → WALK_TO_ITEM → REACH_DOWN → GRASP_OBJECT → LIFT_OBJECT
-      → WALK_TO_TABLE → PLACE_OBJECT → RELEASE → RETURN_TO_STAND
+      → WALK_TO_DROP → PLACE_OBJECT → RELEASE → RETURN_TO_STAND
       → (repeat for item 2)
       → DONE
 ```
 
 | Phase            | What happens |
 |------------------|-------------|
-| `STAND`          | Robot settles into stable standing pose (2 s dwell) |
+| `STAND`          | Robot settles into stable standing pose inside the 0.3 m spawn disk |
 | `WALK_TO_ITEM`   | NavController steers base toward item; arm in carry pose |
 | `REACH_DOWN`     | Knees bend (squat); right arm extends down to floor level |
 | `GRASP_OBJECT`   | MuJoCo weld constraint activated — object attaches to wrist |
 | `LIFT_OBJECT`    | Robot stands up, arm rises to carry height |
-| `WALK_TO_TABLE`  | NavController steers base toward drop-off table |
-| `PLACE_OBJECT`   | Arm extends forward to table surface height |
+| `WALK_TO_DROP`   | NavController steers base toward drop-off table |
+| `PLACE_OBJECT`   | Robot shallow-crouches and leans the arm toward the tabletop |
 | `RELEASE`        | Weld constraint deactivated — object rests on table |
 | `RETURN_TO_STAND`| Arm returns to neutral; leg targets return to standing |
 
@@ -66,9 +67,11 @@ STAND → WALK_TO_ITEM → REACH_DOWN → GRASP_OBJECT → LIFT_OBJECT
 All positions are in the world frame (robot spawns at origin, facing +X):
 
 ```
+Spawn disk diameter: 0.3 m
+
                 Item 1 (red)   Item 2 (blue)
-                  [1.5, 0.4]    [1.5, -0.4]
-Robot [0,0] ──────────────────────────────── Table [3.2, 0.0]
+                 [1.5, 0.22]   [1.5, -0.22]
+Robot [0,0] ──────────────────────────────── Table [3.15, 0.0]
                                               Drop-zone 1: [3.35,  0.15]
                                               Drop-zone 2: [3.35, -0.15]
 ```
@@ -90,11 +93,11 @@ simulate grasping:
 ## Running
 
 ```bash
-# Basic run (180 s simulation, with pushover disturbances)
+# Basic run (300 s simulation)
 python deploy_pickup.py
 
 # No disturbances, no log
-python deploy_pickup.py --no-pushover --no-log
+python deploy_pickup.py --no-log
 
 # Custom duration
 python deploy_pickup.py --duration 240
@@ -111,16 +114,17 @@ pip install mujoco numpy scipy cvxpy pyyaml matplotlib
 ## Design Notes
 
 ### Balance (HW3 StandingCtrl)
-The `StandingCtrl` is used **without modification**.  The `PickupCtrl` overrides
-`standing.arm_waist_target` and `standing.standing_angles` each control step to
-inject the phase-appropriate pose targets, while the QP-based contact-force
-solver and CoM PID continue to run transparently.
+The `StandingCtrl` is still used for the initial stable stand and as the fallback
+balance controller if the HW2 walking policy cannot be loaded.
 
 ### Navigation
-Rather than a full locomotion policy, the `NavController` injects small hip-pitch
-and hip-yaw **offsets** into the standing-angle targets.  This causes the balance
-controller to lean the robot toward the goal, producing slow forward/turning motion
-while maintaining stability via the HW3 QP.
+Walking uses the trained HW2 TorchScript locomotion policy in
+`../../HW2/HW2/policy/motion.pt`.  `PickupCtrl` converts each item/table waypoint
+into conservative forward/yaw velocity commands and lets the policy control the
+12 leg actuators.  During reach/grasp/place phases, the same policy receives a
+zero-motion goal so the legs stay in the policy's stable support behavior while
+the arm/weld sequence runs.  If the policy cannot be loaded, `NavController`
+falls back to the older lean-steering approach.
 
 ### Interpolation
 All pose transitions use **smoothstep** interpolation to avoid torque spikes at
