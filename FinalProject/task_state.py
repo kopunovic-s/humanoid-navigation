@@ -31,9 +31,6 @@ PHASE_MIN_DWELL = {
     Phase.DONE:            9999,
 }
 
-# Linear next-phase map for everything *except* RETURN_TO_STAND.
-# RETURN_TO_STAND is the cycle point: it either jumps back to
-# WALK_TO_ITEM (more items) or ends in DONE (handled in advance()).
 _NEXT = {
     Phase.STAND:           Phase.WALK_TO_ITEM,
     Phase.WALK_TO_ITEM:    Phase.REACH_DOWN,
