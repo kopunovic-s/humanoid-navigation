@@ -315,9 +315,7 @@ class StandingCtrl:
         self.config = self._load_config(config_path)
 
         xml_path = self.config['xml_path'].replace('{DIR}', self.config_dir)
-        # If a separate robot-only XML is specified, use it for the dynamics
-        # model so that scene objects (cubes, table) don't pollute nq/nv or
-        # corrupt the initial qpos that get_initial_state() returns.
+
         robot_xml_path = self.config.get('robot_xml_path', xml_path)
         if robot_xml_path != xml_path:
             robot_xml_path = robot_xml_path.replace('{DIR}', self.config_dir)
@@ -664,10 +662,7 @@ class StandingCtrl:
         M_pitch = -r_CoM[2] * F_com[0]
         M_roll = r_CoM[2] * F_com[1]
         tau_com = np.zeros(self.num_joints)
-        # tau_com[4] = self.ankle_pitch_scale * M_pitch / 2
-        # tau_com[5] = self.ankle_roll_scale * M_roll / 2
-        # tau_com[10] = self.ankle_pitch_scale * M_pitch / 2
-        # tau_com[11] = self.ankle_roll_scale * M_roll / 2
+    
 
         if stance_foot == "left":
             tau_com[4]  = self.ankle_pitch_scale * M_pitch
