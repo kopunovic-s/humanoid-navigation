@@ -1,20 +1,3 @@
-"""
-pickup_ctrl.py  —  HW Final Project
-Full pick-and-place controller for the G1 27-DoF humanoid.
-
-Strategy
---------
-HW3 StandingCtrl (Lagrangian dynamics + QP contact-force balance + CoM
-PID + ankle moment) is used in every phase.  The PickupCtrl overrides
-StandingCtrl.standing_angles / arm_waist_target each control step so
-the same QP solver continues to balance the robot while the *target
-pose* changes from phase to phase.
-
-Walking is implemented as a small lean: NavController computes a hip
-pitch + hip yaw bias from the (goal - base_xy) error and we add it to
-the standing leg targets.  The QP rebalances around the leaned target
-and the robot drifts slowly toward the goal.
-"""
 import os
 import yaml
 import mujoco
@@ -27,9 +10,7 @@ from arm_planner    import ArmPlanner
 from nav_controller import NavController
 from locomotion_policy import HW2LocomotionPolicy
 
-# ---------------------------------------------------------------------------
-# World positions  (must match scene_pickup.xml)
-# ---------------------------------------------------------------------------
+# World positions
 ITEM_POSITIONS = [
     np.array([1.50,  0.22, 0.05]),   # item 1 — red cube, in front/right
     np.array([1.50, -0.22, 0.05]),   # item 2 — blue cube, in front/left
@@ -121,12 +102,10 @@ class PickupCtrl:
         print(f"  num_actuators: {self.num_actuators}")
         print(f"  walk_policy:   {'enabled' if self.walk_policy else 'disabled'}")
 
-    # ------------------------------------------------------------------
     def get_xml_path(self) -> str:  return self._xml_path
     def get_duration(self) -> float: return float(self.config.get('simulation_duration', 300))
     def get_initial_state(self) -> dict: return self.standing.get_initial_state()
 
-    # ------------------------------------------------------------------
     def compute_torque(self, qpos: np.ndarray, qvel: np.ndarray) -> Tuple[np.ndarray, Dict]:
         self._sim_time += self.control_dt
         t = self._sim_time
@@ -145,10 +124,6 @@ class PickupCtrl:
             qpos, qvel, phase, elapsed, arm_tgt, leg_tgt
         )
 
-        # Use the HW2 locomotion policy for every active task phase after the
-        # initial stand.  During manipulation phases it receives a zero-motion
-        # goal at the current base position, so the legs stay in the policy's
-        # stable support behavior while the arm/weld sequence runs.
         if self.walk_policy is not None and phase != Phase.STAND:
             goal = self.nav._goal if phase in (Phase.WALK_TO_ITEM, Phase.WALK_TO_DROP) else qpos[:2]
             tau, info = self._compute_policy_torque(qpos, qvel, arm_tgt, leg_tgt, phase, item_i, goal)
@@ -156,23 +131,14 @@ class PickupCtrl:
             self._check_advance(phase, elapsed, qpos, qvel, item_i, t)
             return tau, info
 
-        # ---- Inject nav lean during walking phases if no HW2 policy exists ----
         if phase in (Phase.WALK_TO_ITEM, Phase.WALK_TO_DROP):
             pb, yb, _ = self.nav.compute_bias(qpos)
             leg_tgt = self.nav.apply_bias(leg_tgt, pb, yb)
         else:
             self._clear_walk_assist()
 
-        # ---- Always use QP-balanced StandingCtrl ----
-        # Tell the standing controller which phase we're in so it can scale
-        # F_com appropriately during walking (see standing_ctrl line ~646).
-        # Without this, F_com runs at full gain and actively fights the lean.
         self.standing.phase = phase.name
 
-        # Smooth the standing-target transition.  When phase changes,
-        # leg_tgt can step by tens of degrees (e.g. STAND -> SQUAT), and
-        # the position-PD term P = kp * (standing_angles - q_joints) would
-        # produce an impulsive torque.  Low-pass the target instead.
         new_leg_tgt = leg_tgt.astype(np.float32)
         if not hasattr(self, "_leg_tgt_filt") or self._leg_tgt_filt is None:
             self._leg_tgt_filt = new_leg_tgt.copy()
@@ -195,7 +161,6 @@ class PickupCtrl:
 
         return tau, info
 
-    # ------------------------------------------------------------------
     def reset(self):
         self.standing.reset()
         if self.walk_policy is not None:
