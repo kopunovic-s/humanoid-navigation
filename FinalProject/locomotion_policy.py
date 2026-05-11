@@ -25,13 +25,6 @@ def wrap_angle(theta):
 
 
 class HW2LocomotionPolicy:
-    """
-    Thin adapter around the HW2 TorchScript walking policy.
-
-    The HW2 policy controls the first 12 G1 leg actuators.  The FinalProject
-    27-DoF model has the same first 12 leg actuator order, so this wrapper can
-    provide leg torques while PickupCtrl continues to control waist/arms.
-    """
 
     def __init__(self, policy_path=None, control_dt=0.01):
         here = Path(__file__).resolve().parent
