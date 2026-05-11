@@ -1,15 +1,3 @@
-"""
-nav_controller.py  —  HW Final Project
-Steers the robot toward a 2-D goal by injecting small hip-pitch and
-hip-yaw offsets into the standing-angle targets.
-
-Key design decisions to prevent falling:
- - pitch_bias is very small (max 0.06 rad) so the balance controller
-   is never overwhelmed
- - yaw correction is gated: we only turn when |yaw_err| > 0.15 rad
-   (pure heading correction without simultaneous forward lean)
- - When yaw error is large we suppress pitch bias entirely (turn first)
-"""
 import numpy as np
 
 class NavController:
