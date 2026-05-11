@@ -10,8 +10,6 @@ import matplotlib.pyplot as plt
 
 from pickup_ctrl import PickupCtrl
 
-
-# ---------------------------------------------------------------------------
 class DataLogger:
     def __init__(self):
         self.time, self.qpos, self.phase = [], [], []
@@ -66,18 +64,14 @@ def simulate(ctrl: PickupCtrl, duration: float = None, log: bool = True):
     sim_data  = mujoco.MjData(sim_model)
     sim_model.opt.timestep = ctrl.simulation_dt
 
-    # Give controller references to the viewer model so welds work
     ctrl.sim_model = sim_model
     ctrl.sim_data  = sim_data
 
-    # Re-resolve body/equality/freejoint IDs against this model instance.
     ctrl._resolve_ids()
 
-    # Disable all welds at start
     for name in ("grasp_item1", "grasp_item2"):
         ctrl._set_weld(name, False)
 
-    # Set initial robot pose without disturbing object positions
     robot_qpos = ctrl.get_initial_state()['qpos']
     robot_nq   = len(robot_qpos)
     mujoco.mj_resetData(sim_model, sim_data)
